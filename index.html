@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat App</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        h2 {
+            text-align: center;
+        }
+        #login, #chat {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+        #messages {
+            border: 1px solid #ddd;
+            height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #fafafa;
+            border-radius: 4px;
+        }
+        input[type="text"] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+<h2>Chat App</h2>
+
+<div id="login">
+    <input id="username" type="text" placeholder="Ismingizni kiriting">
+    <input id="room" type="text" placeholder="Xona ID ni kiriting">
+    <button onclick="login()">Kirish</button>
+</div>
+
+<div id="chat" style="display:none;">
+    <div id="messages"></div>
+    <input id="message" type="text" placeholder="Xabar yozing">
+    <button onclick="sendMessage()">Yuborish</button>
+</div>
+
+<script>
+    const socket = io();
+    let username;
+    let room;
+
+    function login() {
+        username = document.getElementById('username').value;
+        room = document.getElementById('room').value;
+        if (username && room) {
+            document.getElementById('login').style.display = 'none';
+            document.getElementById('chat').style.display = 'block';
+            socket.emit('join_room', {username: username, room: room});
+        }
+    }
+
+    function sendMessage() {
+        const message = document.getElementById('message').value;
+        if (message) {
+            socket.emit('chat_message', {username: username, room: room, message: message});
+            document.getElementById('message').value = '';
+        }
+    }
+
+    socket.on('chat_message', function(data) {
+        const messages = document.getElementById('messages');
+        messages.innerHTML += '<p><strong>' + data.username + ':</strong> ' + data.message + '</p>';
+    });
+
+    socket.on('user_joined', function(data) {
+        const messages = document.getElementById('messages');
+        messages.innerHTML += '<p><em>' + data.username + ' qo\'shildi xonaga: ' + data.room + '</em></p>';
+    });
+
+    // When joining a room, load all previous messages
+    socket.on('previous_messages', function(messages) {
+        const messagesDiv = document.getElementById('messages');
+        messages.forEach(function(msg) {
+            messagesDiv.innerHTML += '<p><strong>' + msg.username + ':</strong> ' + msg.message + '</p>';
+        });
+    });
+</script>
+</body>
+</html>
